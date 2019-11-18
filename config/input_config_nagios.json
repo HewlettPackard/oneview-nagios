@@ -1,0 +1,22 @@
+{
+	"oneview_config": {
+		"host": "10.188.0.190",
+		"alias": "oneview-dev",
+		"user": "abc",
+		"passwd": "mypasswd",
+		"action": "start",
+		"route": "scmb.alerts.#",
+		"process_onetime_alerts": "true",
+		"events_dated_from": "60",
+		"alert_type": "Critical:Warning:Ok",
+		"alert_hardware_category": "server-hardware:enclosures:interconnects:logical-interconnects:sas-interconnects"
+	},
+	"nagios_config": {
+		"nagiosHost": "10.188.239.23",
+		"secretToken": "abc",
+		"apikey": "123"
+	},
+	"stats_refresh_duration": "120",
+	"logging_level": "DEBUG"
+}
+

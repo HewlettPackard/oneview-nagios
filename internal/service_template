@@ -1,0 +1,12 @@
+[Unit]
+Description=OneView Nagios Plugin
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=PWD
+ExecStart=/usr/bin/python3.6 main.py -i config/input_config_nagios.json
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

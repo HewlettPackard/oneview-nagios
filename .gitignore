@@ -1,0 +1,6 @@
+certs/
+logs/
+common/__pycache__/
+internal/__pycache__/
+ov_client/__pycache__/
+nagios_client/__pycache__/

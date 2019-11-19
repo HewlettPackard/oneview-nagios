@@ -1,22 +1,23 @@
 {
 	"oneview_config": {
-		"host": "10.188.0.190",
-		"alias": "oneview-dev",
-		"user": "abc",
-		"passwd": "mypasswd",
+		"host": "XX.XX.XX.XX",
+		"alias": "<oneview_alias>",
+		"user": "oneview_name",
+		"passwd": "<base64_encrypted_password>",
+		"authLoginDomain": "local",
 		"action": "start",
 		"route": "scmb.alerts.#",
-		"process_onetime_alerts": "true",
-		"events_dated_from": "60",
+		"process_onetime_alerts": "false",
+		"events_dated_from": "10",
 		"alert_type": "Critical:Warning:Ok",
 		"alert_hardware_category": "server-hardware:enclosures:interconnects:logical-interconnects:sas-interconnects"
 	},
 	"nagios_config": {
-		"nagiosHost": "10.188.239.23",
-		"secretToken": "abc",
-		"apikey": "123"
+		"nagiosHost": "YY.YY.YY.YY",
+		"secretToken": "<my_secret_token>",
+		"apikey": "<my_api_key>"
 	},
-	"stats_refresh_duration": "120",
-	"logging_level": "DEBUG"
+	"stats_refresh_duration": "600",
+	"logging_level": "INFO"
 }
 

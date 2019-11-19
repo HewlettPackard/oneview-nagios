@@ -131,6 +131,7 @@ def apply_config_and_restart_nagios(nagiosDetails):
 	response = requests.post(URI)
 	retVal = int(response.status_code)
 	retStat = json.loads(response.text)
+    sleep(0.5)
 	
 	try:
 		status = retStat["success"]
@@ -154,19 +155,22 @@ def notify_nagios(data, nagiosDetails, target):
 		uri = 'http://' + nagiosDetails["nagiosHost"] + '/nrdp/'
 		token = nagiosDetails["secretToken"]
 		host = data["resource_name"]
+		
+		status = str(data["severity"])
 
 		# If calling this API for updating status of service, include that also.
 		service = ''
 		if target == 'SERVICE':
 			service = data["service_name"]
-
-		status = str(data["severity"])
+		
 		message = '\'' + data["timestamp"] + " *** " + data["description"] + \
-		" *** " + str(data["correctiveAction"]) + '\''
+			" *** " + str(data["correctiveAction"])
+			
+		#print("Message: " + str(message))
 
 		send_nrdp(uri, token , host, service, status, message, '', '')
 	except Exception as e:
-		logging.error('Updating alert Failed!. alert-name: {} '.format(service))
+		logging.error('Updating alert Failed!. alert-name: {} '.format(e))
 	
 
 
@@ -354,10 +358,13 @@ def get_all_services(nagiosDetails):
 	if response.status_code == 200:
 		response = response.json()
 		# If only one service exists
+		# KVR :- If only one service is existing, it will not be an array. Changing the logic. 
+
 		if int(response['recordcount']) == 1:
-			host = response['recordcount']["host_name"]
-			service = response['recordcount']["name"]
+			host = response["servicestatus"]["host_name"]
+			service = response["servicestatus"]["name"]
 			hostServiceDict[host] = [service]
+		
 
 		# If more than one service exists
 		elif int(response['recordcount']) > 1:
@@ -365,9 +372,11 @@ def get_all_services(nagiosDetails):
 			# Form dict with hostname as key and [] as value and append later
 			hosts = get_all_hosts(nagiosDetails)
 			for host in hosts:
-					hostServiceDict[host] = []
+				
+				hostServiceDict[host] = []
 			# Append service names to list
 			for service in serviceList:
+				if (service["host_name"] != "localhost"):
 					hostServiceDict[service["host_name"]].append(service['name'])
 	else:
 		logging.error("Failed to get all services, Exiting... msg - {}".format(response.text))

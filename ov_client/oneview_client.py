@@ -24,6 +24,11 @@ from common.parsing_apis import *
 from common.utils import *
 	
 
+# Setting logging level of "requests" module
+# This is to avoid info and debug messages of requests module being printing b/w application log messages. 
+#
+logging.getLogger("requests").setLevel(logging.WARNING)
+
 # List of functions to be exported when including in other modules.
 #__all__ = ['process_alert']
 
@@ -94,7 +99,15 @@ def extract_data(msg, ovIpAddr, nagiosDetails):
 		logging.debug("Timestamp assigned")
 		data["description"] = msg["resource"]["description"]
 		data["description"] += "AlertTypeId: " + msg["resource"]["alertTypeID"]
+		
+		# Validate corrective action for "None" or actual string. 
+		# If None, convert it to empty string. 
+		#
 		data["correctiveAction"] = msg["resource"]["correctiveAction"]
+
+		if ( (data["correctiveAction"] == "None") or (data["correctiveAction"] == None) ):
+			data["correctiveAction"] = ""
+		
 		severity = msg["resource"]["severity"]
 		
 		# Appending latest change log message if applicable
@@ -104,8 +117,8 @@ def extract_data(msg, ovIpAddr, nagiosDetails):
 		if change_log:
 			comments = change_log[-1]
 			notes = comments["notes"]
+			data["correctiveAction"] += ". Note: " + str(notes)
 			
-			data["description"] += ". Notes: " + str(notes)
 		print("Alert data:- " + data["description"])
 
 	except Exception as e:
@@ -169,6 +182,9 @@ def process_alert(alert, ovIpAddr, nagiosDetails, input_alert_types, alert_hardw
 			else:
 				logging.info("Host type unknown - " + str(hostCategory))
 				logging.info("alert_hardware_type - " + str(alert_hardware_type[0]))
+				
+				print("Host type unknown - " + str(hostCategory))
+				print("alert_hardware_type - " + str(alert_hardware_type[0]))
 				sleep(1)
 
 		else:
@@ -190,6 +206,7 @@ def process_alerts_one_time(oneview_client, args, nagiosDetails, input_alert_typ
 	# Sample call:- onetimeEvents = oneview_client.connection.get('/rest/alerts?filter="created>=\'2015-05-12\'\"')
 	
 	print("\nAlerts to be processed onetime at the beginning.")
+
 	allServices = get_all_services(nagiosDetails)
 	onetimeAlertFlag = args["process_onetime_alerts"]	
 	if onetimeAlertFlag.upper() == 'TRUE':

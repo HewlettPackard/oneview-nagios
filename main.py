@@ -28,23 +28,25 @@ import logging
 import multiprocessing as mp
 from time import sleep
 from hpOneView.oneview_client import OneViewClient
-#from hpOneView import *
 from functools import partial
 import amqplib.client_0_8 as amqp
 from ov_client.oneview_client import *
 from nagios_client.nagios_client import *
 from common.send_nrdp import *
-# from internal.polling_threads import *
 from internal.polling_processes import *
 from internal.scmb_utils import *
 
+
+# Setting logging level of "requests" module
+# This is to avoid info and debug messages of requests module being printing b/w application log messages. 
+#
+logging.getLogger("amqp").setLevel(logging.WARNING)
 
 # Global variable for callback
 config = {}
 
 def callback(channel, msg):
 	global config
-	logging.debug("callback.......")
 	logging.debug("msg.delivery_tag: %s", msg.delivery_tag)
 	logging.debug("msg.consumer_tag: %s", msg.consumer_tag)
 		
@@ -65,10 +67,6 @@ def callback(channel, msg):
 		config['inputAlertTypes'], config['alertHardwareTypes']))
 	sleep(0.1)		
 	
-	# GSE code change :-  For processing alert.
-	#process_alert(content, config['oneViewIP'], config['nagiosDetails'], \
-	# config['inputAlertTypes'], config['alertHardwareTypes'])
-
 	# Cancel this callback
 	if msg.body == 'quit':
 		channel.basic_cancel(msg.consumer_tag)
@@ -124,18 +122,18 @@ def main():
 		
 	# Check and parse the input arguments into python's format
 	inputFile = parser.parse_args()
-	# Parsing file for details  
+	
+    # Parsing file for details  
 	with open(inputFile.input_file) as data_file:	
 		inputConfig = json.load(data_file)
-	# get the logging level
-	loggingLevel = inputConfig["logging_level"].upper()
-	# get refresh duration
+	
+    # Get the logging level and refresh duration
+	loggingLevel = inputConfig["logging_level"].upper() 
 	refreshDuration = inputConfig['stats_refresh_duration']
 	
 	try:
-		# Validate the data in the OneView config files.
-		oneViewDetails = inputConfig["oneview_config"]		
-		# Validate the data in the Nagios config files.	
+		# Validate the data in the OneView and Nagios config files.
+		oneViewDetails = inputConfig["oneview_config"]
 		nagiosDetails = inputConfig["nagios_config"]
 	
 	except Exception as e:
@@ -187,6 +185,7 @@ def main():
 			"ip": oneViewDetails["host"],
 			"credentials": {
 				"userName": oneViewDetails["user"],
+				"authLoginDomain": oneViewDetails["authLoginDomain"],
 				"password": oneViewDetails["passwd"]
 			}
 		}

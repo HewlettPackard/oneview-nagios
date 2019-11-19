@@ -31,6 +31,12 @@ from common.utils import *
 # List of functions to be exported when including in other modules.
 # __all__ = ['create_infra_in_nagios']
 
+# Setting logging level of "requests" module
+# This is to avoid info and debug messages of requests module being printing b/w application log messages. 
+#
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("resource").setLevel(logging.WARNING)
+
 ##################################################################
 # Function to update the status of host to nagios server
 #
@@ -226,49 +232,51 @@ def update_enclosure_peripheral_info(baseURI, oneview_client, nagiosDetails):
 		peripheralInfo = oneview_client.connection.get(URI)
 		count = peripheralInfo["count"]
 		total = peripheralInfo["total"]
+		
 		for enclosure in peripheralInfo["members"]:
+			enclName = trim_name(enclosure["name"])
 			# Check powersupply bays service existence, if not present create it
 
-			# Get all services for the perticular enclosure
+			# Get all services for the particular enclosure
 			try:
-				enclosureServices = allServices[enclosure["name"]]
+				enclosureServices = allServices[enclName]
 			except KeyError:
 				# If no services exist for the enclosure assign it to []
 				enclosureServices = []
 
 			powerSupplyBays = enclosure["powerSupplyBays"]
 			for powerSupplyBay in powerSupplyBays:
-				enclosureBayPowSupplyName = enclosure["name"] + "_PowerSupplyBay_" + str(powerSupplyBay["bayNumber"])
+				enclosureBayPowSupplyName = enclName + "_PowerSupplyBay_" + str(powerSupplyBay["bayNumber"])
 				data = {}
 				if not enclosureBayPowSupplyName in enclosureServices:
 					# Power Supply bay entry does not exist. Create it first and then update its status
 					logging.info("Power Supply bay entry does not exist. Create it first and then update its status via NRDP :- " + str(enclosureBayPowSupplyName))
 					data["service_name"] = enclosureBayPowSupplyName
-					data["resource_name"] = enclosure["name"]
+					data["resource_name"] = enclName
 					create_service(data, nagiosDetails)
 					restartFlag = 1
 					
 			# Check fanBays service existence, if not present create it
 			fanBays = enclosure["fanBays"]
 			for fan in fanBays:
-				eachFanName = enclosure["name"] + "_FanBay_" + str(fan["bayNumber"])
+				eachFanName = enclName + "_FanBay_" + str(fan["bayNumber"])
 				# Check for the service existence.
 				if not eachFanName in enclosureServices:
 					# Power Supply bay entry does not exist. Create it first and then update its status
 					logging.info("fan bay entry does not exist. Create it first and then update its status via NRDP :- " + eachFanName)
 					data["service_name"] = eachFanName
-					data["resource_name"] = enclosure["name"]
+					data["resource_name"] = enclName
 					create_service(data, nagiosDetails)
 					restartFlag = 1
 			
 			## Check for Power supply stats
 			#
-			serviceName = enclosure["name"] + "_PowerSupply_Stats"
+			serviceName = enclName + "_PowerSupply_Stats"
 			if not serviceName in enclosureServices:
 				# Power Supply bay entry does not exist. Create it first and then update its status
 				data = {}
 				data["service_name"] = serviceName
-				data["resource_name"] = enclosure["name"]
+				data["resource_name"] = enclName
 				logging.info("Power stats entry does not exist. Create it first and then update its status via NRDP :- " + data["service_name"])
 				create_service(data, nagiosDetails)
 				restartFlag = 1
@@ -288,10 +296,10 @@ def update_enclosure_peripheral_info(baseURI, oneview_client, nagiosDetails):
 			# Update powerSupplyBay services
 			for powerSupplyBay in powerSupplyBays:
 				data = {}
-				enclosureBayPowSupplyName = enclosure["name"] + "_PowerSupplyBay_" + str(powerSupplyBay["bayNumber"])				
+				enclosureBayPowSupplyName = enclName + "_PowerSupplyBay_" + str(powerSupplyBay["bayNumber"])				
 
 				# Filling details about this power supply to update the status
-				data["resource_name"] = enclosure["name"]
+				data["resource_name"] = enclName
 				data["service_name"] = enclosureBayPowSupplyName
 				data["severity"] = map_service_Status( powerSupplyBay["status"] )
 				data["timestamp"] = str(datetime.now())
@@ -304,11 +312,11 @@ def update_enclosure_peripheral_info(baseURI, oneview_client, nagiosDetails):
 			## Each fan details of all the bays in this enclosure
 			# Update fan bays services 
 			for fan in fanBays:
-				eachFanName = enclosure["name"] + "_FanBay_" + str(fan["bayNumber"])
+				eachFanName = enclName + "_FanBay_" + str(fan["bayNumber"])
 				data = {}
 
 				# Filling details about this power supply
-				data["resource_name"] = enclosure["name"]
+				data["resource_name"] = enclName
 				data["service_name"] = eachFanName
 				data["severity"] = map_service_Status( fan["status"] )
 				data["timestamp"] = str(datetime.now())
@@ -317,7 +325,7 @@ def update_enclosure_peripheral_info(baseURI, oneview_client, nagiosDetails):
 				notify_nagios(data, nagiosDetails, 'SERVICE')
 				sleep(1)
 			# Process power statistics.
-			process_power_stats(enclosure["name"], enclosure["uri"], oneview_client, nagiosDetails)
+			process_power_stats(enclName, enclosure["uri"], oneview_client, nagiosDetails)
 			sleep(1)
 
 		start += count
@@ -380,7 +388,7 @@ def send_port_stats_to_nagios(allPortStats, nagiosDetails):
 			# Filling details about port statistics to update the status
 			data["severity"] = map_service_Status( port["members"]["Status"] )
 			data["timestamp"] = str(datetime.now())
-			description = "Status = " + str(port["members"]["Status"]) + " *** Speed = " + str(port["members"]["Speed"]) + " *** AdapterPort = " + str(port["members"]["adopterPort"])  + " *** MacAddress = " + str(port["members"]["macAddress"]) + " *** Received (bits) = " + str(port["members"]["IfInOctets"])  + " *** Transmitted (bits) = " + str(port["members"]["IfOutOctets"]) 
+			description = "Status = " + str(port["members"]["Status"]) + " *** Speed = " + str(port["members"]["Speed"]) + " *** AdapterPort = " + str(port["members"]["adopterPort"])  + " *** IpAddress = " + str(port["members"]["macAddress"]) + " *** Received (bits) = " + str(port["members"]["IfInOctets"])  + " *** Transmitted (bits) = " + str(port["members"]["IfOutOctets"]) 
 			data["description"] = description
 			data["correctiveAction"] = ". NA. "
 			notify_nagios(data, nagiosDetails, 'SERVICE')

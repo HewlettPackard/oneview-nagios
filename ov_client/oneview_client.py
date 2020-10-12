@@ -271,7 +271,7 @@ def process_alerts_one_time(oneview_client, args, nagiosDetails, input_alert_typ
 			logging.error("Failed to create one time alert \"{}\", Exiting...".format(alert['service_name']))
 			sys.exit(e)
 		
-		# Restrat Nagios after creating services if the restartFlag is set.
+		# Restart Nagios after creating services if the restartFlag is set.
 		if restartFlag == 1:		
 			retCode = apply_config_and_restart_nagios(nagiosDetails)
 			if retCode != 0:
